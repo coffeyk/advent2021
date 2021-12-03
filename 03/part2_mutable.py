@@ -101,29 +101,7 @@ class TreeMutable:
 
         return self
 
-    def add_word_functional(self, word: str, index: int = 0) -> "TreeMutable":
-        if index >= len(word):
-            # finish them
-            return TreeMutable(
-                one=self.one, zero=self.zero, value=word, size=self.size + 1
-            )
-        else:
-            l = word[index]
-            if l == "0":
-                zero = self.zero or TreeMutable()
-                return TreeMutable(
-                    one=self.one,
-                    zero=zero.add_word_functional(word, index + 1),
-                    size=self.size + 1,
-                )
-            else:
-                one = self.one or TreeMutable()
-                return TreeMutable(
-                    one=one.add_word_functional(word, index + 1),
-                    zero=self.zero,
-                    size=self.size + 1,
-                )
-
+    @property
     def oxygen(self) -> str:
         """
         To find oxygen generator rating, determine the most common value (0 or 1) in the current bit position,
@@ -132,6 +110,7 @@ class TreeMutable:
         """
         return self._walk(operator.ge)
 
+    @property
     def co2(self) -> str:
         """
         To find CO2 scrubber rating, determine the least common value (0 or 1) in the current bit position,
@@ -170,11 +149,12 @@ def get_data(fname: str) -> Iterator[Iterable[str]]:
 
 
 def process_data(values: Iterable[str]) -> tuple[str, str]:
-    # mutable_tree = reduce(TreeMutable.add_word, values, TreeMutable())
-    functional_root = reduce(TreeFunctional.add_word, values, TreeFunctional())
+    mutable_tree = TreeMutable()
+    for v in values:
+        mutable_tree.add_word(v)
 
-    oxygen = functional_root.oxygen()
-    co2 = functional_root.co2()
+    oxygen = mutable_tree.oxygen
+    co2 = mutable_tree.co2
 
     return (oxygen, co2)
 
