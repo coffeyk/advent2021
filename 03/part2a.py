@@ -1,57 +1,124 @@
 from functools import reduce
 import os
 from contextlib import contextmanager
-from typing import Iterable, Iterator, Optional, Callable, Tuple
+from typing import Iterable, Iterator, NamedTuple, Optional, Callable
 from dataclasses import dataclass
-from pprint import pprint
 import operator
-import svgling
 
 
-T = str | Tuple[str, "T"] | Tuple[str, "T", "T"]
+class TreeFunctional(NamedTuple):
 
-
-@dataclass
-class Tree:
-
-    zero: Optional["Tree"] = None
-    one: Optional["Tree"] = None
+    zero: Optional["TreeFunctional"] = None
+    one: Optional["TreeFunctional"] = None
 
     size: int = 0
     value: str = ""
 
-    def add_word(self, word: str) -> "Tree":
+    def add_word(self, word: str) -> "TreeFunctional":
+        return self._add_word_functional(word)
+
+    def _add_word_functional(self, word: str, index: int = 0) -> "TreeFunctional":
+        if index >= len(word):
+            # finish them
+            return TreeFunctional(
+                one=self.one, zero=self.zero, value=word, size=self.size + 1
+            )
+        else:
+            l = word[index]
+            if l == "0":
+                zero = self.zero or TreeFunctional()
+                return TreeFunctional(
+                    one=self.one,
+                    zero=zero._add_word_functional(word, index + 1),
+                    size=self.size + 1,
+                )
+            else:
+                one = self.one or TreeFunctional()
+                return TreeFunctional(
+                    one=one._add_word_functional(word, index + 1),
+                    zero=self.zero,
+                    size=self.size + 1,
+                )
+
+    def oxygen(self) -> str:
+        """
+        To find oxygen generator rating, determine the most common value (0 or 1) in the current bit position,
+        and keep only numbers with that bit in that position.
+        If 0 and 1 are equally common, keep values with a 1 in the position being considered.
+        """
+        return self._walk(operator.ge)
+
+    def co2(self) -> str:
+        """
+        To find CO2 scrubber rating, determine the least common value (0 or 1) in the current bit position,
+        and keep only numbers with that bit in that position.
+        If 0 and 1 are equally common, keep values with a 0 in the position being considered.
+        """
+        return self._walk(operator.lt)
+
+    def _walk(self, comparison: Callable[..., bool]) -> str:
+        # Traverse down the tree
+        if self.zero is not None and self.one is not None:
+            # Two good children, compare sizes
+            if comparison(self.one.size, self.zero.size):
+                node = self.one
+            else:
+                node = self.zero
+        elif self.one is not None:
+            # Single child
+            node = self.one
+        elif self.zero is not None:
+            # Single child
+            node = self.zero
+        else:
+            # Found a Leaf
+            return self.value
+        return node._walk(comparison)
+
+
+@dataclass
+class TreeMutable:
+
+    zero: Optional["TreeMutable"] = None
+    one: Optional["TreeMutable"] = None
+
+    size: int = 0
+    value: str = ""
+
+    def add_word(self, word: str) -> "TreeMutable":
         node = self
         for l in word:
             if l == "0":
                 if node.zero is None:
-                    node.zero = Tree()
+                    node.zero = TreeMutable()
                 node = node.zero
             else:
                 if node.one is None:
-                    node.one = Tree()
+                    node.one = TreeMutable()
                 node = node.one
             node.size += 1
         node.value = word
 
-        return node
+        return self
 
-    def add_word_functional(self, word: str, index: int = 0) -> "Tree":
+    def add_word_functional(self, word: str, index: int = 0) -> "TreeMutable":
         if index >= len(word):
             # finish them
-            return Tree(one=self.one, zero=self.zero, value=word, size=self.size + 1)
+            return TreeMutable(
+                one=self.one, zero=self.zero, value=word, size=self.size + 1
+            )
         else:
             l = word[index]
             if l == "0":
-                zero = self.zero or Tree()
-                return Tree(
+                zero = self.zero or TreeMutable()
+                return TreeMutable(
                     one=self.one,
                     zero=zero.add_word_functional(word, index + 1),
                     size=self.size + 1,
                 )
             else:
-                one = self.one or Tree()
-                return Tree(
+                one = self.one or TreeMutable()
+                return TreeMutable(
                     one=one.add_word_functional(word, index + 1),
                     zero=self.zero,
                     size=self.size + 1,
@@ -92,20 +159,6 @@ class Tree:
             return self.value
         return node._walk(comparison)
 
-    def render(self, name: str) -> T:
-        left = self.zero.render("0") if self.zero else ""
-        right = self.one.render("1") if self.one else ""
-
-        title = f"{name}: {self.size}"
-        if left and right:
-            return (title, left, right)
-        elif left:
-            return (title, left)
-        elif right:
-            return (title, right)
-        else:
-            return (title, self.value)
-
 
 @contextmanager
 def get_data(fname: str) -> Iterator[Iterable[str]]:
@@ -117,22 +170,11 @@ def get_data(fname: str) -> Iterator[Iterable[str]]:
 
 
 def process_data(values: Iterable[str]) -> tuple[str, str]:
-    # root = Tree()
-    # for v in values:
-    #     root.add_word(v)
-    root = reduce(Tree.add_word_functional, values, Tree())
-    # pprint(root)
-    with open("3.2a.svg", "w") as fout:
-        fout.write(
-            svgling.draw_tree(
-                root.render("*"),
-            )
-            .get_svg()
-            .tostring()
-        )
+    # mutable_tree = reduce(TreeMutable.add_word, values, TreeMutable())
+    functional_root = reduce(TreeFunctional.add_word, values, TreeFunctional())
 
-    oxygen = root.oxygen()
-    co2 = root.co2()
+    oxygen = functional_root.oxygen()
+    co2 = functional_root.co2()
 
     return (oxygen, co2)
 
