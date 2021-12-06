@@ -95,6 +95,7 @@ def render_result(result: int):
 def main():
     fname = "input.txt"
     # fname = "sample.txt"
+    # fname = "big_data.txt"
     with get_data(fname) as data:
         result = process_data(data)
         render_result(result)
@@ -102,3 +103,30 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# Better plan:
+# Walk the grid, checking for 2+ lines
+#   Short circut out early once found
+#
+# Sort the input to help
+#  Horizontal lines grouped by x, sorted by y
+#  Vertical lines Grouped by y, sorted by x
+#  diag: for each type,
+#       Negative slope: p1.y-p1.x
+#       Positive slope: p1.y+p1.x
+
+#   0 1 2 3
+# 0 x x x x
+# 1 x x x x
+# 2 x x x x
+# 3 x x x x
+
+
+# 3, 0 -> 1, 2
+# 3, 0 -> 2, 1
+# 3, 0 -> 0, 3
+
+
+# vs
+# 2, 0 -> 0, 2
