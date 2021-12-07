@@ -17,16 +17,16 @@ def get_data(fname: str) -> Iterable[int]:
 
 
 def process_data(data: Iterable[int]) -> ResultSet:
-    position_counts = Counter(data)
+    position_weights = Counter(data)
 
-    min_position = min(position_counts.keys())
-    max_position = max(position_counts.keys())
+    min_position = min(position_weights.keys())
+    max_position = max(position_weights.keys())
 
     # Start at the end so the range doesn't need a +/-
-    min_cost = cost(position_counts, max_position)
+    min_cost = cost(position_weights, max_position)
     best_position = max_position
     for p in range(min_position, max_position):
-        position_cost = cost(position_counts, p)
+        position_cost = cost(position_weights, p)
         if position_cost < min_cost:
             min_cost = position_cost
             best_position = p
@@ -36,7 +36,7 @@ def process_data(data: Iterable[int]) -> ResultSet:
     return ResultSet(best_position, min_cost)
 
 
-def cost(data: dict[int, int], target: int) -> int:
+def cost(position_weights: dict[int, int], target: int) -> int:
     """As it turns out, crab submarine engines don't burn fuel at a constant rate.
     Instead, each change of 1 step in horizontal position costs 1 more unit of fuel than the last:
     the first step costs 1, the second step costs 2, the third step costs 3, and so on."""
@@ -45,7 +45,8 @@ def cost(data: dict[int, int], target: int) -> int:
         return (distance ** 2 + distance) // 2
 
     return sum(
-        weight * _cost(abs(target - position)) for position, weight in data.items()
+        weight * _cost(abs(target - position))
+        for position, weight in position_weights.items()
     )
 
 
