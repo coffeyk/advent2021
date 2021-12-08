@@ -101,10 +101,10 @@ def _process_examples_logically(examples: list[str]) -> SegmentMap:
     partial_segment_map[a_segment] = Segments.A
 
     # Four is BCDF
-    four = example_map[4][0]
+    bcdf_set = example_map[4][0]
 
     # We know One is CF, so four - one is BD
-    bd_pair = four - cf_pair
+    bd_pair = bcdf_set - cf_pair
 
     # Now we'll use the 5 segment numbers to resolve B, D, and G
 
