@@ -92,15 +92,15 @@ def _process_examples_logically(examples: list[str]) -> SegmentMap:
         example_map[len(e)].append(set(e))
 
     # Find the A segment
-    # One is CF
+    # One is CF, the only two length display
     cf_pair = example_map[2][0]
-    # Seven is ACF
+    # Seven is ACF, the only three length display
     afc_triple = example_map[3][0]
     # So A is seven - one
     a_segment = (afc_triple - cf_pair).pop()
     partial_segment_map[a_segment] = Segments.A
 
-    # Four is BCDF
+    # Four is BCDF, the only four length display
     bcdf_set = example_map[4][0]
 
     # We know One is CF, so four - one is BD
@@ -115,27 +115,28 @@ def _process_examples_logically(examples: list[str]) -> SegmentMap:
     # A is known, so reduce to the DG pair
     dg_pair = adg_triple - {a_segment}
 
-    # we now have to pairs BD and DG, so their intersection is D which resolves the other two
+    # we now have to pairs BD and DG, so their intersection is D
     d_segment = (bd_pair & dg_pair).pop()
     partial_segment_map[d_segment] = Segments.D
 
+    # And the half of the pairs are resolved too
     b_segment = (bd_pair - {d_segment}).pop()
     partial_segment_map[b_segment] = Segments.B
 
     g_segment = (dg_pair - {d_segment}).pop()
     partial_segment_map[g_segment] = Segments.G
 
-    # Knowing B, we can identify the 5 (ABDFG)
+    # Given B, we can identify the 5 (ABDFG) as the 2 and 3 don't contain B
     abdfg_set = next((s for s in five_segment_sets if s.intersection(b_segment)))
-    # And solve for F because we know the other four segments
+    # Resolve F because we know the other four segments in ABDFG
     f_segment = (abdfg_set - set((a_segment, b_segment, d_segment, g_segment))).pop()
     partial_segment_map[f_segment] = Segments.F
 
-    # Knowing F, we can finally resolve the CF pair
+    # Given F, we can finally resolve the CF pair
     c_segment = (cf_pair - {f_segment}).pop()
     partial_segment_map[c_segment] = Segments.C
 
-    # Finally, E is the final outstanding segment
+    # Finally, E is the only remaining segment
     e_segment = (set("abcdefg") - partial_segment_map.keys()).pop()
     partial_segment_map[e_segment] = Segments.E
 
