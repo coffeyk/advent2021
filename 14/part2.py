@@ -113,7 +113,7 @@ def score(result: PairCounts) -> int:
     counts: dict[str, int] = Counter()
 
     # Only look at one character of the pair, otherwise we'll double count
-    # e.g. ABC -> "AB", "BC" the B is counted twice.
+    # e.g. ABC -> "AB", "BC" the B is counted twice if we look at every character.
     # We use the second character because the first character of the original input is parsed as the pair (None, C)
     for (_, c2), count in result.items():
         counts[c2] += count
